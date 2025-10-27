@@ -26,8 +26,8 @@ const int segmentPins[7] = {
 };
 
 // ====== ขาเลือกหลัก (Common Cathode) ======
-const int digitL = 12;   // หลักซ้าย
-const int digitR = 13;   // หลักขวา
+const int digitL = 11;   // หลักซ้าย
+const int digitR = 12;   // หลักขวา
 
 void setup() {
   for (int i = 0; i < 7; i++) pinMode(segmentPins[i], OUTPUT);
