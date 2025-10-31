@@ -1,0 +1,120 @@
+รับค่า MQTT มันไม่ได้มีเวทมนตร์อะไรหรอก มันมี 4 ขั้นที่ต้องทำทุกครั้ง แต่คนชอบข้ามแล้วก็งงว่าทำไม payload ไม่มา
+
+เอาแบบดูจากโค้ดที่นายเขียนเลยนะ
+
+const char SUBSCRIBE_TOPIC[] = "67070069/venus";
+
+
+อันนี้คือแค่ “บอกชื่อห้อง” ที่เราจะไปนั่งฟัง ยังไม่ได้ฟังอะไรจริงๆ
+
+ต่อไปดูลำดับในโปรแกรม
+
+1. เริ่ม client แล้วบอกว่าจะรับข้อความ
+
+ใน connectToMQTT() มีอันนี้
+
+mqtt.begin(MQTT_BROKER_ADRRESS, MQTT_PORT, network);
+mqtt.onMessage(messageReceived);
+
+
+แปลว่า:
+
+mqtt.begin(...) คือบอกไลบรารีว่า broker อยู่ที่ไหน จะคุยผ่านตัวไหน (ตรงนี้ใช้ network ซึ่งคือ WiFiClient)
+
+mqtt.onMessage(messageReceived); อันนี้สำคัญสุด มันคือ “เวลาใครส่งมาหาเรา ให้เรียกฟังก์ชันนี้นะ”
+ก็คือเราตั้ง callback ชื่อ messageReceived(...) ไว้รอเลย
+
+ถ้าไม่เขียนบรรทัดที่สองนี้ ต่อให้ subscribe ได้ก็จริง แต่จะไม่มีใครมารับ เพราะไม่มีคนยืนหน้าประตู
+
+2. ต่อกับ broker ให้สำเร็จ
+
+ก็ลูปกวนมันไปเรื่อย
+
+while (!mqtt.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD)) {
+  ...
+}
+
+
+ถ้ายังต่อไม่ได้ก็ไม่มีทางมีข้อความเข้ามาให้รับ นี่คือจุดที่บางคนลืมเช็ก
+
+3. ประกาศตัวว่า “ฉันจะฟัง topic นี้นะ”
+
+พอเชื่อมได้แล้วค่อย subscribe
+
+mqtt.subscribe(SUBSCRIBE_TOPIC);
+
+
+ตรงนี้แหละที่ใช้ const char SUBSCRIBE_TOPIC[] = "67070069/venus";
+คือเราเอาชื่อ topic ไปบอก broker ว่า
+
+“ถ้ามีใคร publish ไปที่ 67070069/venus ขอส่งมาที่ฉันด้วย”
+
+ตั้งแต่บรรทัดนี้เป็นต้นไป broker จะเริ่มส่งข้อความที่เข้ามาชื่อ topic ตรงกันมายังบอร์ดตัวนี้
+
+4. รอรับใน loop
+
+ใน loop() ของนายมี
+
+mqtt.loop();
+
+
+บรรทัดนี้คือคนที่หลายๆ คนลืมแล้วก็งงว่า “ทำไม subscribe แล้วไม่เข้า callback”
+เพราะ mqtt.loop() นี่แหละที่คอยเช็กว่ามีข้อความใหม่จาก broker เข้ามาไหม ถ้ามีมันจะเรียก callback ที่ตั้งไว้ตอนแรก
+
+ถ้าไม่เรียก mqtt.loop() เลย บอร์ดจะต่อกับ broker ได้ แต่จะไม่อ่านอะไรเข้าไปเลย เหมือนเปิด LINE แต่ไม่เลื่อนอ่านแชต
+
+5. ได้ข้อความปุ๊บ callback โดนเรียก
+
+อันนี้ของนาย
+
+void messageReceived(String &topic, String &payload) {
+  Serial.println("Arduino UNO R4 - received from MQTT:");
+  Serial.println("- topic: " + topic);
+  Serial.println("- payload:");
+  Serial.println(payload);
+
+  int temp = payload.toInt();
+  ...
+}
+
+
+ตอน broker ส่งมาจริงๆ มันจะเรียกฟังก์ชันนี้แล้วโยน 2 อย่างมาให้
+
+topic คือชื่อห้อง เช่น "67070069/venus"
+
+payload คือข้อความจริง เช่น "37"
+
+เราก็แปลงเอาเองว่าจะทำอะไรต่อ จะ toInt จะไปเปิดไฟ ก็จัดในนี้
+
+สรุปสั้นแบบพากย์สอบปากเปล่า
+
+กำหนดชื่อ topic ไว้ในตัวแปร
+
+const char SUBSCRIBE_TOPIC[] = "67070069/venus";
+
+
+ต่อ MQTT แล้วสมัครฟัง
+
+mqtt.begin(...);
+mqtt.onMessage(messageReceived);
+mqtt.connect(...);
+mqtt.subscribe(SUBSCRIBE_TOPIC);
+
+
+ใน loop() ต้องมี
+
+mqtt.loop();
+
+
+ทุกครั้งที่มีคน publish ไปที่ 67070069/venus
+ฟังก์ชัน messageReceived(topic, payload) จะโดนเรียกอัตโนมัติ
+
+ไม่มีอะไรลึกลับกว่านี้ ถ้า 4 ข้อนี้ครบแล้วยังไม่เข้า callback ให้สงสัย
+
+ชื่อ topic พิมพ์ไม่เหมือนเว็บ
+
+client ID ซ้ำ
+
+ไม่ได้เรียก mqtt.loop()
+
+ต่อ broker ไม่ติด

@@ -23,8 +23,8 @@ const char PUBLISH_TOPIC[] = "67070069/venus";
 WiFiClient network;
 MQTTClient mqtt = MQTTClient(256);
 
-const int RED_PIN   = 10;
-const int GREEN_PIN = 11;
+const int RED_PIN   = 11;
+const int GREEN_PIN = 10;
 const int BLUE_PIN  = 9;
 
 unsigned long lastPublishTime = 0;
@@ -111,24 +111,25 @@ void messageReceived(String &topic, String &payload) {
 
   // 36 - 50 → RED
   if (temp >= 36 && temp <= 50) {
-    digitalWrite(RED_PIN, HIGH);
+    digitalWrite(RED_PIN, 1);
     Serial.println("LED = RED");
   }
   // 26 - 35 → BLUE
   else if (temp >= 26 && temp <= 35) {
-    digitalWrite(GREEN_PIN, HIGH);
+    digitalWrite(BLUE_PIN, 1);
     Serial.println("LED = BLUE");
   }
   // 10 - 25 → GREEN
   else if (temp >= 10 && temp <= 25) {
-    digitalWrite(BLUE_PIN, HIGH);
+    digitalWrite(GREEN_PIN, 1);
+    
     Serial.println("LED = GREEN");
   }
   // นอกช่วง ปิด
   else {
-    digitalWrite(RED_PIN, LOW);
-    digitalWrite(GREEN_PIN, LOW);
-    digitalWrite(BLUE_PIN, LOW);
+    digitalWrite(RED_PIN, 0);
+    digitalWrite(GREEN_PIN, 0);
+    digitalWrite(BLUE_PIN, 0);
     Serial.println("LED = OFF");
   }
 }
